@@ -41,3 +41,17 @@ class WeatherUnits:
     @staticmethod
     def mm_to_in(mm: Optional[float]) -> Optional[float]:
         return mm / 25.4 if mm is not None else None
+
+    # ---------------------------------------------------------------------------
+    # Misc
+    # ---------------------------------------------------------------------------
+
+    @staticmethod
+    def wm2_to_lux(wm2: Optional[float]) -> Optional[float]:
+        """
+        Reverses the standard Ecowitt/Fine Offset PWS radiation conversion.
+        Hardware formula: 1 W/m² = 126.7 Lux.
+        """
+        if wm2 is None:
+            return None
+        return wm2 * 126.7

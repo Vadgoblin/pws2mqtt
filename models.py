@@ -53,7 +53,14 @@ class OutdoorEnvironment(BaseModel):
 
     # Solar
     solar_radiation: Optional[float] = Field(default=None, validation_alias="solarradiation")
+    illuminance: Optional[float] = None
     uv_index: Optional[float] = Field(default=None, validation_alias="UV")
+
+    @model_validator(mode="after")
+    def compute_illuminance(self) -> "OutdoorEnvironment":
+        if self.solar_radiation is not None:
+            self.illuminance = WeatherUnits.wm2_to_lux(self.solar_radiation)
+        return self
 
     @model_validator(mode="after")
     def normalize_to_metric(self) -> "OutdoorEnvironment":
