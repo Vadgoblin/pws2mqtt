@@ -19,6 +19,7 @@ class IndoorEnvironment(BaseModel):
 
     temperature: Optional[float] = Field(default=None, validation_alias="indoortempf")
     humidity: Optional[int] = Field(default=None, validation_alias="indoorhumidity")
+    barometric_pressure: Optional[float] = Field(default=None, validation_alias="baromin")
 
     @model_validator(mode="after")
     def normalize_to_metric(self) -> "IndoorEnvironment":
@@ -26,6 +27,7 @@ class IndoorEnvironment(BaseModel):
             return self
 
         self.temperature = WeatherUnits.f_to_c(self.temperature)
+        self.barometric_pressure = WeatherUnits.inhg_to_hpa(self.barometric_pressure)
 
         self._is_normalized = True
         return self
@@ -33,9 +35,6 @@ class IndoorEnvironment(BaseModel):
 
 class OutdoorEnvironment(BaseModel):
     _is_normalized: bool = PrivateAttr(default=False)
-
-    # Pressure
-    barometric_pressure: Optional[float] = Field(default=None, validation_alias="baromin")
 
     # Ambient air
     temperature: Optional[float] = Field(default=None, validation_alias="tempf")
@@ -69,7 +68,6 @@ class OutdoorEnvironment(BaseModel):
 
         self.temperature = WeatherUnits.f_to_c(self.temperature)
         self.dew_point = WeatherUnits.f_to_c(self.dew_point)
-        self.barometric_pressure = WeatherUnits.inhg_to_hpa(self.barometric_pressure)
         self.wind_speed = WeatherUnits.mph_to_kmh(self.wind_speed)
         self.wind_gust = WeatherUnits.mph_to_kmh(self.wind_gust)
         self.rain_rate = WeatherUnits.in_to_mm(self.rain_rate)
