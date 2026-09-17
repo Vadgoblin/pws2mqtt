@@ -78,6 +78,21 @@ class ChannelReading(BaseModel):
     temperature: float
     humidity: Optional[int] = None
 
+    @classmethod
+    def from_raw_data(cls, data: dict, channel: int) -> Optional["ChannelReading"]:
+        # Firmware quirk: channel 1 has no suffix
+        t_key = "soiltempf" if channel == 1 else f"soiltemp{channel}f"
+        h_key = "soilmoisture" if channel == 1 else f"soilmoisture{channel}"
+
+        raw_temp = data.get(t_key)
+        if raw_temp is None:
+            return None
+
+        return cls.model_validate({
+            "temperature": raw_temp,
+            "humidity": data.get(h_key),
+        })
+
     @model_validator(mode="after")
     def normalize_to_metric(self) -> "ChannelReading":
         if self._is_normalized:
@@ -99,37 +114,17 @@ class WeatherStationPayload(BaseModel):
     @classmethod
     def assemble_from_flat_payload(cls, data: Any) -> Any:
         if not isinstance(data, dict):
-            # Supports MultiDict/QueryParams (FastAPI Request.query_params)
             data = dict(data)
-
-        # # Helper to convert blank/placeholder strings to None
-        # cleaned: dict[str, Any] = {
-        #     k: (None if v in ("", "null", "NULL", "--", "N/A") else v)
-        #     for k, v in data.items()
-        # }
 
         station = StationInfo.model_validate(data)
         indoor = IndoorEnvironment.model_validate(data)
         outdoor = OutdoorEnvironment.model_validate(data)
 
-        channels: dict[int, ChannelReading] = {}
-        for ch in range(1, 8):
-            # Channel 1 often has no digit suffix in firmware aliases
-            temp_key = "soiltempf" if ch == 1 else f"soiltemp{ch}f"
-            hum_key = "soilmoisture" if ch == 1 else f"soilmoisture{ch}"
-
-            raw_temp = data.get(temp_key)
-            raw_hum = data.get(hum_key)
-
-            if raw_temp is not None:
-                try:
-                    channels[ch] = ChannelReading(
-                        temperature=float(raw_temp),
-                        humidity=int(raw_hum) if raw_hum is not None else None,
-                    )
-
-                except (ValueError, TypeError):
-                    continue
+        channels = {
+            ch: reading
+            for ch in range(1, 8)
+            if (reading := ChannelReading.from_raw_data(data, ch)) is not None
+        }
 
         return {
             "station": station,
