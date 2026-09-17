@@ -1,7 +1,8 @@
-import traceback
 from typing import Optional, Any
 
 from pydantic import BaseModel, Field, model_validator, PrivateAttr
+
+from converter import WeatherUnits
 
 
 class StationInfo(BaseModel):
@@ -47,20 +48,13 @@ class OutdoorEnvironment(BaseModel):
         if self._is_normalized:
             return self
 
-        if self.temperature is not None:
-            self.temperature = round((self.temperature - 32) * 5 / 9, 2)
-        if self.dew_point is not None:
-            self.dew_point = round((self.dew_point - 32) * 5 / 9, 2)
-        if self.barometric_pressure is not None:
-            self.barometric_pressure = round(self.barometric_pressure * 33.86389, 2)
-        if self.wind_speed is not None:
-            self.wind_speed = round(self.wind_speed * 1.60934, 2)
-        if self.wind_gust is not None:
-            self.wind_gust = round(self.wind_gust * 1.60934, 2)
-        if self.rain_rate is not None:
-            self.rain_rate = round(self.rain_rate * 25.4, 2)
-        if self.daily_rain is not None:
-            self.daily_rain = round(self.daily_rain * 25.4, 2)
+        self.temperature = WeatherUnits.f_to_c(self.temperature)
+        self.dew_point = WeatherUnits.f_to_c(self.dew_point)
+        self.barometric_pressure = WeatherUnits.inhg_to_hpa(self.barometric_pressure)
+        self.wind_speed = WeatherUnits.mph_to_kmh(self.wind_speed)
+        self.wind_gust = WeatherUnits.mph_to_kmh(self.wind_gust)
+        self.rain_rate = WeatherUnits.in_to_mm(self.rain_rate)
+        self.daily_rain = WeatherUnits.in_to_mm(self.daily_rain)
 
         self._is_normalized = True
         return self
