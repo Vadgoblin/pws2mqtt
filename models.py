@@ -146,3 +146,11 @@ class WeatherStationPayload(BaseModel):
             "outdoor": outdoor,
             "channels": channels,
         }
+
+    def export_to_dict(self) -> dict[str, Any]:
+        return {
+            "station_id": self.station.station_id,
+            "indoor": self.indoor.model_dump(exclude_none=True),
+            "outdoor": self.outdoor.model_dump(exclude_none=True),
+            "channels": self.channels.model_dump(exclude_none=True),
+        }
