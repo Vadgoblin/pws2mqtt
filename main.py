@@ -3,15 +3,13 @@ from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI, Depends, Response, status
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from starlette.requests import Request
 
 app = FastAPI()
 
 
 class WeatherStationData(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
     # Credentials and metadata
     ID: str
     PASSWORD: str
@@ -37,9 +35,21 @@ class WeatherStationData(BaseModel):
     indoortempf: Optional[float] = None
     indoorhumidity: Optional[int] = None
 
-
-    # soiltempf: Optional[float] = None
-    # soilmoisture: Optional[int] = None
+    # Additioan sensors
+    soiltempf: Optional[float] = Field(default=None, exclude_if=lambda v: v is None)
+    soilmoisture: Optional[int] = Field(default=None, exclude_if=lambda v: v is None)
+    soiltemp2f: Optional[float] = Field(default=None, exclude_if=lambda v: v is None)
+    soilmoisture2: Optional[int] = Field(default=None, exclude_if=lambda v: v is None)
+    soiltemp3f: Optional[float] = Field(default=None, exclude_if=lambda v: v is None)
+    soilmoisture3: Optional[int] = Field(default=None, exclude_if=lambda v: v is None)
+    soiltemp4f: Optional[float] = Field(default=None, exclude_if=lambda v: v is None)
+    soilmoisture4: Optional[int] = Field(default=None, exclude_if=lambda v: v is None)
+    soiltemp5f: Optional[float] = Field(default=None, exclude_if=lambda v: v is None)
+    soilmoisture5: Optional[int] = Field(default=None, exclude_if=lambda v: v is None)
+    soiltemp6f: Optional[float] = Field(default=None, exclude_if=lambda v: v is None)
+    soilmoisture6: Optional[int] = Field(default=None, exclude_if=lambda v: v is None)
+    soiltemp7f: Optional[float] = Field(default=None, exclude_if=lambda v: v is None)
+    soilmoisture7: Optional[int] = Field(default=None, exclude_if=lambda v: v is None)
 
 
 @app.get("/weatherstation/updateweatherstation.php")

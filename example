@@ -1,0 +1,5 @@
+{
+'ID': 'sess_id', 'PASSWORD': 'sess_key', 'action': 'updateraww', 'realtime': 1, 'rtfreq': 5, 'dateutc': 'now', 'baromin': 29.9, 'tempf': 78.0, 'dewptf': 51.0, 'humidity': 39, 'windspeedmph': 2.4, 'windgustmph': 2.4, 'winddir': 230, 'rainin': 0.0, 'dailyrainin': 0.0, 'solarradiation': 411.36, 'UV': 3.5, 'indoortempf': 73.4, 'indoorhumidity': 46, 'soiltempf': 79.8, 'soilmoisture': 41}
+
+INFO:     192.168.0.141:61678 - "GET /weatherstation/updateweatherstation.php?ID=sess_id&PASSWORD=sess_key&action=updateraww&realtime=1&rtfreq=5&dateutc=now&baromin=29.91&tempf=80.9&dewptf=48.2&humidity=32&windspeedmph=1.7&windgustmph=1.7&winddir=180&rainin=0.0&dailyrainin=0.0&solarradiation=696.95&UV=6.4&indoortempf=75.0&indoorhumidity=42&soiltemp2f=76.1&soilmoisture2=45 HTTP/1.1" 200 OK
+INFO:     192.168.0.141:56176 - "GET /weatherstation/updateweatherstation.php?ID=sess_id&PASSWORD=sess_key&action=updateraww&realtime=1&rtfreq=5&dateutc=now&baromin=29.91&tempf=81.5&dewptf=48.2&humidity=31&windspeedmph=1.5&windgustmph=1.5&winddir=180&rainin=0.0&dailyrainin=0.0&solarradiation=700.34&UV=7.4&indoortempf=75.0&indoorhumidity=43&soiltempf=76.4&soilmoisture=46 HTTP/1.1" 200 OK
