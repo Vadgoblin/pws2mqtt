@@ -1,10 +1,9 @@
-from typing import Optional
+from typing import Optional, Any
+from pydantic import BaseModel, Field, model_validator
 
-from pydantic import BaseModel, Field
 
 
-class WeatherStationData(BaseModel):
-    # Credentials and metadata
+class StationInfo(BaseModel):
     station_id: str = Field(validation_alias="ID")
     password: str = Field(validation_alias="PASSWORD", exclude=True)
     action: str = "updateraww"
@@ -12,11 +11,17 @@ class WeatherStationData(BaseModel):
     rtfreq: Optional[int] = None
     dateutc: Optional[str] = None
 
-    # Outdoor stations
+
+class IndoorEnvironment(BaseModel):
+    temperature_f: Optional[float] = Field(default=None, validation_alias="indoortempf")
+    humidity_pct: Optional[int] = Field(default=None, validation_alias="indoorhumidity")
+
+
+class OutdoorEnvironment(BaseModel):
     # Pressure
     barometric_pressure_in: Optional[float] = Field(default=None, validation_alias="baromin")
 
-    # Temperature & Humidity
+    # Ambient air
     temperature_f: Optional[float] = Field(default=None, validation_alias="tempf")
     dew_point_f: Optional[float] = Field(default=None, validation_alias="dewptf")
     humidity_pct: Optional[int] = Field(default=None, validation_alias="humidity")
@@ -30,32 +35,66 @@ class WeatherStationData(BaseModel):
     rain_rate_in: Optional[float] = Field(default=None, validation_alias="rainin")
     daily_rain_in: Optional[float] = Field(default=None, validation_alias="dailyrainin")
 
-    # Solar & Light
+    # Solar
     solar_radiation_wm2: Optional[float] = Field(default=None, validation_alias="solarradiation")
     uv_index: Optional[float] = Field(default=None, validation_alias="UV")
 
-    # Indoor station
-    indoor_temp_f: Optional[float] = Field(default=None, validation_alias="indoortempf")
-    indoor_humidity: Optional[int] = Field(default=None, validation_alias="indoorhumidity")
 
-    # Remote Air Sensors (1 to 7)
-    channel_1_temperature: Optional[float] = Field(default=None, validation_alias="soiltempf", exclude_if=lambda v: v is None)
-    channel_1_humidity: Optional[int] = Field(default=None, validation_alias="soilmoisture", exclude_if=lambda v: v is None)
+class RemoteChannelReading(BaseModel):
+    channel: int
+    temperature_f: float
+    humidity_pct: Optional[int] = None
 
-    channel_2_temperature: Optional[float] = Field(default=None, validation_alias="soiltemp2f", exclude_if=lambda v: v is None)
-    channel_2_humidity: Optional[int] = Field(default=None, validation_alias="soilmoisture2", exclude_if=lambda v: v is None)
 
-    channel_3_temperature: Optional[float] = Field(default=None, validation_alias="soiltemp3f", exclude_if=lambda v: v is None)
-    channel_3_humidity: Optional[int] = Field(default=None, validation_alias="soilmoisture3", exclude_if=lambda v: v is None)
 
-    channel_4_temperature: Optional[float] = Field(default=None, validation_alias="soiltemp4f", exclude_if=lambda v: v is None)
-    channel_4_humidity: Optional[int] = Field(default=None, validation_alias="soilmoisture4", exclude_if=lambda v: v is None)
+class WeatherStationPayload(BaseModel):
+    station: StationInfo
+    indoor: IndoorEnvironment
+    outdoor: OutdoorEnvironment
+    channels: list[RemoteChannelReading] = Field(default_factory=list)
 
-    channel_5_temperature: Optional[float] = Field(default=None, validation_alias="soiltemp5f", exclude_if=lambda v: v is None)
-    channel_5_humidity: Optional[int] = Field(default=None, validation_alias="soilmoisture5", exclude_if=lambda v: v is None)
+    @model_validator(mode="before")
+    @classmethod
+    def assemble_from_flat_payload(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            # Supports MultiDict/QueryParams (FastAPI Request.query_params)
+            data = dict(data)
 
-    channel_6_temperature: Optional[float] = Field(default=None, validation_alias="soiltemp6f", exclude_if=lambda v: v is None)
-    channel_6_humidity: Optional[int] = Field(default=None, validation_alias="soilmoisture6", exclude_if=lambda v: v is None)
+        # # Helper to convert blank/placeholder strings to None
+        # cleaned: dict[str, Any] = {
+        #     k: (None if v in ("", "null", "NULL", "--", "N/A") else v)
+        #     for k, v in data.items()
+        # }
 
-    channel_7_temperature: Optional[float] = Field(default=None, validation_alias="soiltemp7f", exclude_if=lambda v: v is None)
-    channel_7_humidity: Optional[int] = Field(default=None, validation_alias="soilmoisture7", exclude_if=lambda v: v is None)
+
+        station = StationInfo.model_validate(data)
+        indoor = IndoorEnvironment.model_validate(data)
+        outdoor = OutdoorEnvironment.model_validate(data)
+
+        channels: list[RemoteChannelReading] = []
+        for ch in range(1, 8):
+            # Channel 1 often has no digit suffix in firmware aliases
+            temp_key = "soiltempf" if ch == 1 else f"soiltemp{ch}f"
+            hum_key = "soilmoisture" if ch == 1 else f"soilmoisture{ch}"
+
+            raw_temp = data.get(temp_key)
+            raw_hum = data.get(hum_key)
+
+            if raw_temp is not None:
+                try:
+                    channels.append(
+                        RemoteChannelReading(
+                            channel=ch,
+                            temperature_f=float(raw_temp),
+                            humidity_pct=int(raw_hum) if raw_hum is not None else None,
+                        )
+                    )
+                except (ValueError, TypeError):
+                    continue
+
+        return {
+            "station": station,
+            "indoor": indoor,
+            "outdoor": outdoor,
+            "channels": channels,
+        }

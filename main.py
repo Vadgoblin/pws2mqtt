@@ -4,14 +4,14 @@ import uvicorn
 from fastapi import FastAPI, Response, status
 from starlette.requests import Request
 
-from models import WeatherStationData
+from models import WeatherStationPayload
 
 app = FastAPI()
 
 
 @app.get("/weatherstation/updateweatherstation.php")
 async def update_weather_station(request: Request):
-    data = WeatherStationData(**request.query_params)
+    data = WeatherStationPayload(**request.query_params)
 
     # Example verification
     # if data.ID != "expected_id" or data.PASSWORD != "expected_password":
