@@ -1,6 +1,7 @@
+import traceback
 from typing import Optional, Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, PrivateAttr
 
 
 class StationInfo(BaseModel):
@@ -18,26 +19,51 @@ class IndoorEnvironment(BaseModel):
 
 
 class OutdoorEnvironment(BaseModel):
+    _is_normalized: bool = PrivateAttr(default=False)
+
     # Pressure
-    barometric_pressure_in: Optional[float] = Field(default=None, validation_alias="baromin")
+    barometric_pressure: Optional[float] = Field(default=None, validation_alias="baromin")
 
     # Ambient air
-    temperature_f: Optional[float] = Field(default=None, validation_alias="tempf")
-    dew_point_f: Optional[float] = Field(default=None, validation_alias="dewptf")
-    humidity_pct: Optional[int] = Field(default=None, validation_alias="humidity")
+    temperature: Optional[float] = Field(default=None, validation_alias="tempf")
+    dew_point: Optional[float] = Field(default=None, validation_alias="dewptf")
+    humidity: Optional[int] = Field(default=None, validation_alias="humidity")
 
     # Wind
-    wind_speed_mph: Optional[float] = Field(default=None, validation_alias="windspeedmph")
-    wind_gust_mph: Optional[float] = Field(default=None, validation_alias="windgustmph")
-    wind_direction_deg: Optional[int] = Field(default=None, validation_alias="winddir")
+    wind_speed: Optional[float] = Field(default=None, validation_alias="windspeedmph")
+    wind_gust: Optional[float] = Field(default=None, validation_alias="windgustmph")
+    wind_direction: Optional[int] = Field(default=None, validation_alias="winddir")
 
     # Rain
-    rain_rate_in: Optional[float] = Field(default=None, validation_alias="rainin")
-    daily_rain_in: Optional[float] = Field(default=None, validation_alias="dailyrainin")
+    rain_rate: Optional[float] = Field(default=None, validation_alias="rainin")
+    daily_rain: Optional[float] = Field(default=None, validation_alias="dailyrainin")
 
     # Solar
-    solar_radiation_wm2: Optional[float] = Field(default=None, validation_alias="solarradiation")
+    solar_radiation: Optional[float] = Field(default=None, validation_alias="solarradiation")
     uv_index: Optional[float] = Field(default=None, validation_alias="UV")
+
+    @model_validator(mode="after")
+    def normalize_to_metric(self) -> "OutdoorEnvironment":
+        if self._is_normalized:
+            return self
+
+        if self.temperature is not None:
+            self.temperature = round((self.temperature - 32) * 5 / 9, 2)
+        if self.dew_point is not None:
+            self.dew_point = round((self.dew_point - 32) * 5 / 9, 2)
+        if self.barometric_pressure is not None:
+            self.barometric_pressure = round(self.barometric_pressure * 33.86389, 2)
+        if self.wind_speed is not None:
+            self.wind_speed = round(self.wind_speed * 1.60934, 2)
+        if self.wind_gust is not None:
+            self.wind_gust = round(self.wind_gust * 1.60934, 2)
+        if self.rain_rate is not None:
+            self.rain_rate = round(self.rain_rate * 25.4, 2)
+        if self.daily_rain is not None:
+            self.daily_rain = round(self.daily_rain * 25.4, 2)
+
+        self._is_normalized = True
+        return self
 
 
 class ChannelReading(BaseModel):
