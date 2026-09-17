@@ -15,8 +15,20 @@ class StationInfo(BaseModel):
 
 
 class IndoorEnvironment(BaseModel):
-    temperature_f: Optional[float] = Field(default=None, validation_alias="indoortempf")
-    humidity_pct: Optional[int] = Field(default=None, validation_alias="indoorhumidity")
+    _is_normalized: bool = PrivateAttr(default=False)
+
+    temperature: Optional[float] = Field(default=None, validation_alias="indoortempf")
+    humidity: Optional[int] = Field(default=None, validation_alias="indoorhumidity")
+
+    @model_validator(mode="after")
+    def normalize_to_metric(self) -> "IndoorEnvironment":
+        if self._is_normalized:
+            return self
+
+        self.temperature = WeatherUnits.f_to_c(self.temperature)
+
+        self._is_normalized = True
+        return self
 
 
 class OutdoorEnvironment(BaseModel):
@@ -61,8 +73,20 @@ class OutdoorEnvironment(BaseModel):
 
 
 class ChannelReading(BaseModel):
-    temperature_f: float
-    humidity_pct: Optional[int] = None
+    _is_normalized: bool = PrivateAttr(default=False)
+
+    temperature: float
+    humidity: Optional[int] = None
+
+    @model_validator(mode="after")
+    def normalize_to_metric(self) -> "ChannelReading":
+        if self._is_normalized:
+            return self
+
+        self.temperature = WeatherUnits.f_to_c(self.temperature)
+
+        self._is_normalized = True
+        return self
 
 
 class WeatherStationPayload(BaseModel):
@@ -100,8 +124,8 @@ class WeatherStationPayload(BaseModel):
             if raw_temp is not None:
                 try:
                     channels[ch] = ChannelReading(
-                        temperature_f=float(raw_temp),
-                        humidity_pct=int(raw_hum) if raw_hum is not None else None,
+                        temperature=float(raw_temp),
+                        humidity=int(raw_hum) if raw_hum is not None else None,
                     )
 
                 except (ValueError, TypeError):
