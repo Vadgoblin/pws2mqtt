@@ -1,6 +1,6 @@
 from typing import Optional, Any
 
-from pydantic import BaseModel, Field, model_validator, PrivateAttr
+from pydantic import BaseModel, Field, model_validator, PrivateAttr, RootModel
 
 from converter import WeatherUnits
 
@@ -104,11 +104,25 @@ class ChannelReading(BaseModel):
         return self
 
 
+class Channels(RootModel[dict[int, ChannelReading]]):
+    @model_validator(mode="before")
+    @classmethod
+    def parse_flat(cls, data: Any) -> dict[int, ChannelReading]:
+        if not isinstance(data, dict):
+            return {}
+
+        return {
+            ch: reading
+            for ch in range(1, 8)
+            if (reading := ChannelReading.from_raw_data(data, ch)) is not None
+        }
+
+
 class WeatherStationPayload(BaseModel):
     station: StationInfo
     indoor: IndoorEnvironment
     outdoor: OutdoorEnvironment
-    channels: dict[int, ChannelReading] = Field(default_factory=dict)
+    channels: Channels
 
     @model_validator(mode="before")
     @classmethod
@@ -119,12 +133,7 @@ class WeatherStationPayload(BaseModel):
         station = StationInfo.model_validate(data)
         indoor = IndoorEnvironment.model_validate(data)
         outdoor = OutdoorEnvironment.model_validate(data)
-
-        channels = {
-            ch: reading
-            for ch in range(1, 8)
-            if (reading := ChannelReading.from_raw_data(data, ch)) is not None
-        }
+        channels = Channels.model_validate(data)
 
         return {
             "station": station,
