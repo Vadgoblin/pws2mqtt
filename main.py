@@ -19,7 +19,6 @@ async def update_weather_station(request: Request):
 
     # Process  the data
     station_payload = data.model_dump()
-    print(station_payload)
     print(json.dumps(station_payload, indent=2))
 
     # Weather Underground-compatible stations expect 'success\n' in plain text

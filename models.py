@@ -1,6 +1,6 @@
 from typing import Optional, Any
-from pydantic import BaseModel, Field, model_validator
 
+from pydantic import BaseModel, Field, model_validator
 
 
 class StationInfo(BaseModel):
@@ -40,18 +40,16 @@ class OutdoorEnvironment(BaseModel):
     uv_index: Optional[float] = Field(default=None, validation_alias="UV")
 
 
-class RemoteChannelReading(BaseModel):
-    channel: int
+class ChannelReading(BaseModel):
     temperature_f: float
     humidity_pct: Optional[int] = None
-
 
 
 class WeatherStationPayload(BaseModel):
     station: StationInfo
     indoor: IndoorEnvironment
     outdoor: OutdoorEnvironment
-    channels: list[RemoteChannelReading] = Field(default_factory=list)
+    channels: dict[int, ChannelReading] = Field(default_factory=dict)
 
     @model_validator(mode="before")
     @classmethod
@@ -66,12 +64,11 @@ class WeatherStationPayload(BaseModel):
         #     for k, v in data.items()
         # }
 
-
         station = StationInfo.model_validate(data)
         indoor = IndoorEnvironment.model_validate(data)
         outdoor = OutdoorEnvironment.model_validate(data)
 
-        channels: list[RemoteChannelReading] = []
+        channels: dict[int, ChannelReading] = {}
         for ch in range(1, 8):
             # Channel 1 often has no digit suffix in firmware aliases
             temp_key = "soiltempf" if ch == 1 else f"soiltemp{ch}f"
@@ -82,13 +79,11 @@ class WeatherStationPayload(BaseModel):
 
             if raw_temp is not None:
                 try:
-                    channels.append(
-                        RemoteChannelReading(
-                            channel=ch,
-                            temperature_f=float(raw_temp),
-                            humidity_pct=int(raw_hum) if raw_hum is not None else None,
-                        )
+                    channels[ch] = ChannelReading(
+                        temperature_f=float(raw_temp),
+                        humidity_pct=int(raw_hum) if raw_hum is not None else None,
                     )
+
                 except (ValueError, TypeError):
                     continue
 
