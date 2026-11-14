@@ -1,5 +1,4 @@
-import json
-from typing import Any
+from typing import Any, Dict
 
 import uvicorn
 from fastapi import FastAPI, Response, status
@@ -15,17 +14,27 @@ mqtt_client = MQTT_Client()
 @app.get("/weatherstation/updateweatherstation.php")
 async def update_weather_station(request: Request):
     data = WeatherStationPayload(**request.query_params)
+    station_id = data.station.station_id
 
-    processed_payload = data.export_to_dict()
-    processed_payload = round_floats(processed_payload)
+    payload = await preprocess_data(data)
 
-    mqtt_message = json.dumps(processed_payload)
+    # print(json.dumps(payload, indent=2))
+    # print(json.dumps(flatten_dict(processed_payload), indent=2))
 
-    mqtt_client.send_json(mqtt_message)
-    print(json.dumps(processed_payload, indent=2))
+    # mqtt_message = json.dumps(processed_payload)
+
+    mqtt_client.send_data(f"weather_station/{station_id}", payload)
+    # print(json.dumps(processed_payload, indent=2))
 
     # Weather Underground-compatible stations expect 'success\n' in plain text
     return Response(content="success\n", media_type="text/plain", status_code=status.HTTP_200_OK)
+
+
+async def preprocess_data(data: WeatherStationPayload) -> Dict[str, Any]:
+    station_data = data.export_to_dict()
+    del station_data["station_id"]
+
+    return round_floats(station_data)
 
 
 def round_floats(obj: Any, decimals: int = 2) -> Any:
