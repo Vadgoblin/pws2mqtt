@@ -2,7 +2,7 @@ from typing import Optional, Any
 
 from pydantic import BaseModel, Field, model_validator, PrivateAttr, RootModel
 
-from converter import WeatherUnits
+from weather_units import WeatherUnits
 
 
 class StationInfo(BaseModel):
