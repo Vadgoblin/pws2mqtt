@@ -15,13 +15,7 @@ mqtt_client = MQTT_Client()
 async def update_weather_station(request: Request):
     data = WeatherStationPayload(**request.query_params)
     station_id = data.station.station_id
-
     payload = await preprocess_data(data)
-
-    # print(json.dumps(payload, indent=2))
-    # print(json.dumps(flatten_dict(processed_payload), indent=2))
-
-    # mqtt_message = json.dumps(processed_payload)
 
     mqtt_client.send_data(f"weather_station/{station_id}", payload)
     # print(json.dumps(processed_payload, indent=2))

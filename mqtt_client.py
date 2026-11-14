@@ -5,12 +5,12 @@ import paho.mqtt.client as mqtt
 from paho.mqtt.enums import CallbackAPIVersion
 
 from flatten_dict import flatten_dict
-from mqtt_payload_format import MqttPayloadFormat
+from mqtt_payload_format import MQTTPayloadFormat
 
 
 class MQTT_Client:
     def __init__(self):
-        self._payload_format = MqttPayloadFormat.JSON_FLAT
+        self._payload_format = MQTTPayloadFormat.JSON_FLAT
 
         self._mqtt_client = mqtt.Client(CallbackAPIVersion.VERSION2)
         self._mqtt_client.on_connect = self._connect_callback
@@ -29,14 +29,14 @@ class MQTT_Client:
 
     def send_data(self, topic_prefix: str, payload: Dict[str, Any]):
         match self._payload_format:
-            case MqttPayloadFormat.JSON:
+            case MQTTPayloadFormat.JSON:
                 mqtt_message = json.dumps(payload)
                 self._mqtt_client.publish(topic_prefix, mqtt_message)
-            case MqttPayloadFormat.JSON_FLAT:
+            case MQTTPayloadFormat.JSON_FLAT:
                 payload_flat = flatten_dict(payload)
                 mqtt_message = json.dumps(payload_flat)
                 self._mqtt_client.publish(topic_prefix, mqtt_message)
-            case MqttPayloadFormat.INDIVIDUAL:
+            case MQTTPayloadFormat.INDIVIDUAL:
                 raise NotImplementedError
-            case MqttPayloadFormat.INDIVIDUAL_FLAT:
+            case MQTTPayloadFormat.INDIVIDUAL_FLAT:
                 raise NotImplementedError
