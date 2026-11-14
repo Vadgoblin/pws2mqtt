@@ -10,7 +10,7 @@ from mqtt_payload_format import MQTTPayloadFormat
 
 class MQTT_Client:
     def __init__(self):
-        self._payload_format = MQTTPayloadFormat.JSON_FLAT
+        self._payload_format = MQTTPayloadFormat.INDIVIDUAL_FLAT
 
         self._mqtt_client = mqtt.Client(CallbackAPIVersion.VERSION2)
         self._mqtt_client.on_connect = self._connect_callback
@@ -32,11 +32,21 @@ class MQTT_Client:
             case MQTTPayloadFormat.JSON:
                 mqtt_message = json.dumps(payload)
                 self._mqtt_client.publish(topic_prefix, mqtt_message)
+
             case MQTTPayloadFormat.JSON_FLAT:
                 payload_flat = flatten_dict(payload)
                 mqtt_message = json.dumps(payload_flat)
                 self._mqtt_client.publish(topic_prefix, mqtt_message)
+
             case MQTTPayloadFormat.INDIVIDUAL:
-                raise NotImplementedError
+                payload_flat = flatten_dict(payload, sep='/')
+                for key, value in payload_flat.items():
+                    self._mqtt_client.publish(f"{topic_prefix}/{key}", str(value))
+
             case MQTTPayloadFormat.INDIVIDUAL_FLAT:
-                raise NotImplementedError
+                payload_flat = flatten_dict(payload, sep='.')
+                for key, value in payload_flat.items():
+                    self._mqtt_client.publish(f"{topic_prefix}/{key}", str(value))
+
+            case _ as unreachable:
+                assert_never(unreachable)
